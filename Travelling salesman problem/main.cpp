@@ -8,105 +8,114 @@
 using namespace std;
 
 size_t n;
-
+double cDistance, shortestDistance;
 struct POINT
 {
 	double x, y;
 };
 POINT *label;
 
-class VECTOR
+class GRAPH
 {
 	static size_t pointer;
 public:	
+
 	double translation;
-	static double distance;
-	POINT *begin;
-	POINT *end;
-	VECTOR()
+	size_t begin;
+	size_t end;
+
+	GRAPH()
 	{
-		begin = &label[pointer];
-		pointer = (pointer + 1)%n;
-		end = &label[pointer];
-		translation = pow(pow(begin->x - end->x, 2) + pow(begin->y - end->y, 2), 1 / 2);
-		cout << pointer <<endl;
+		begin = pointer;
+		pointer = pointer++%n;
+		end = pointer;
+		translation = 0;
+		count();
+		shortestDistance = cDistance;
 	}
 	void count()
 	{
-		double buf = pow(pow(begin->x - end->x, 2) + pow(begin->y - end->y, 2), 1 / 2);
-		distance -= buf - translation;
-		translation = buf;
-	}
-	bool operator <(VECTOR a)
-	{
-		 if (distance < a.distance) return true;
-		 else return false;
-	}
-	bool operator >(VECTOR a)
-	{
-		if (distance > a.distance) return true;
-		else return false;
-	}
+		cDistance -= translation;
+		translation = sqrt((label[end].x - label[begin].x, 2) + pow(label[end].y - label[begin].y, 2));
+		cDistance += translation;
+	}	
 };
-size_t VECTOR::pointer = 0;
-double VECTOR::distance = 0xFFFFFFFF;
+size_t GRAPH::pointer = 0;
 
-VECTOR *path;
-VECTOR *buff;
+GRAPH *path;
+POINT *shortestLabel;
 	
+void swap(POINT &a, POINT &b)
+{
+	POINT buff;
+	buff = a;
+	a = b;
+	b = buff;
+}
 void permute()
 {
-	POINT *buffer;
-	size_t V1 = rand() % n;
-	size_t V2;
-	
-	buffer = buff[V1].end;
-	do V2 = rand() % n;	while (V2 == V1 || buff[V1].begin == buff[V2].end || buff[V2].begin == buff[V1].end);
-
-	buff[V1].end = buff[V2].end;
-	buff[V2].end = buffer;
-
-	buff[V1].count();
-	buff[V2].count();
+	size_t V1, V2;
+	V1 = rand() % n;
+	do V2 = rand() % n; while (V2 == V1);
+	swap(label[V1], label[V2]);
+	path[V1].count();
+	path[V2].count();
 	return;
+}
+bool check()
+{
+	return cDistance < shortestDistance;
 }
 
 int main(int argc, char* argv[])
 {
-	const unsigned int maxIteration = 10000000;
-	const unsigned int maxIterationWhithoutProgress = 10000;
+	const unsigned int maxIteration = 10000;
+	const unsigned int maxIterationWhithoutProgress = 1000;
 	srand(time(NULL));
 
 	fstream file;
-	file.open("data.txt",ios::in);
+	file.open("data.txt", ios::in);
 	file >> n;
 	label = new POINT[n];
+	shortestLabel = new POINT[n];
 	for (size_t i = 0; i < n; i++)
 	{
 		file >> label[i].x >> label[i].y;
 	}
 	file.close();
 
+	path = new GRAPH[n];	
 	for (size_t i = 0; i < n; i++)
 	{
-		cout << label[i].x << " " << label[i].y << endl;
+		cout << label[i].x << "  "<< label[i].y << endl;
 	}
 
-	buff = new VECTOR[n]();
-	
 	unsigned int iterationsWithoutProgress = 0;
 	for (int i = 0; i < maxIteration && iterationsWithoutProgress < maxIterationWhithoutProgress; i++)
 	{
 		permute();
-		if (path < buff)
+		
+		if (cDistance < shortestDistance)
 		{
+			shortestDistance = cDistance;
+			memcpy(shortestLabel, label, sizeof(label));
 			iterationsWithoutProgress = 0;
-			std::cout << path->distance;
+			cout << endl << shortestDistance << endl;
 		}
 		else
 			iterationsWithoutProgress++;
 	}
-	delete[] path;
-	path = buff;
+	memcpy(label, shortestLabel, sizeof(shortestLabel));
 
+	cout << endl << shortestDistance<< endl;
+	for (size_t i = 0; i < n; i++)
+	{
+		cout << label[i].x << "  " << label[i].y << endl;
+	}
+	double sum = 0;
+	for (size_t i = 0; i < n; i++)
+	{
+		sum += path[i].translation;
+	}
+	cout << sum <<endl;
 }
