@@ -3,68 +3,57 @@
 #include <string>
 #include <time.h>
 #include <math.h>
-#include <climits>
-
 using namespace std;
 
-size_t n;
+int n;
 double cDistance, shortestDistance;
 struct POINT
 {
 	double x, y;
 };
 POINT *label;
+POINT *shortestLabel;
+size_t pointer=0;
 
-class GRAPH
+class VECTOR
 {
-	static size_t pointer;
-public:	
+public:
 
-	double translation;
 	size_t begin;
 	size_t end;
+	double distance;
 
-	GRAPH()
+	VECTOR()
 	{
 		begin = pointer;
-		pointer = pointer++%n;
-		end = pointer;
-		translation = 0;
-		count();
-		shortestDistance = cDistance;
+		pointer++;
+		end = pointer % n;
 	}
-	void count()
+	double count()
 	{
-		cDistance -= translation;
-		translation = sqrt((label[end].x - label[begin].x, 2) + pow(label[end].y - label[begin].y, 2));
-		cDistance += translation;
-	}	
+		distance = sqrt(pow((label[end].x - label[begin].x), 2) + pow((label[end].y - label[begin].x), 2));
+		return distance;
+	}
 };
-size_t GRAPH::pointer = 0;
+VECTOR *path;
 
-GRAPH *path;
-POINT *shortestLabel;
-	
-void swap(POINT &a, POINT &b)
+void evolve()
 {
-	POINT buff;
-	buff = a;
-	a = b;
-	b = buff;
-}
-void permute()
-{
-	size_t V1, V2;
-	V1 = rand() % n;
-	do V2 = rand() % n; while (V2 == V1);
-	swap(label[V1], label[V2]);
-	path[V1].count();
-	path[V2].count();
-	return;
-}
-bool check()
-{
-	return cDistance < shortestDistance;
+	static POINT buf;
+	static int pos1, pos2;
+	pos1 = rand() % n;
+	do
+	{
+		pos2 = rand() % n;
+	} while (pos1 == pos2);
+
+	buf.x = label[pos1].x;
+	buf.y = label[pos1].y;
+	label[pos1].x = label[pos2].x;
+	label[pos1].y = label[pos2].y;
+	label[pos2].x = buf.x;
+	label[pos2].y = buf.y;
+
 }
 
 int main(int argc, char* argv[])
@@ -72,50 +61,48 @@ int main(int argc, char* argv[])
 	const unsigned int maxIteration = 10000;
 	const unsigned int maxIterationWhithoutProgress = 1000;
 	srand(time(NULL));
-
 	fstream file;
 	file.open("data.txt", ios::in);
+	if (!file.good()) return -1;
 	file >> n;
 	label = new POINT[n];
 	shortestLabel = new POINT[n];
-	for (size_t i = 0; i < n; i++)
+	for (int i = 0; i < n; i++)
 	{
-		file >> label[i].x >> label[i].y;
+		file >> label[i].x;
+		file >> label[i].y;
 	}
-	file.close();
+	path = new VECTOR[n];
 
-	path = new GRAPH[n];	
-	for (size_t i = 0; i < n; i++)
+	for (int i = 0; i < n; i++) path[i].count();
+	shortestDistance = 0;
+	for (int i = 0; i < n; i++) shortestDistance += path[i].distance;
+	for (int i = 0; i < n; i++)
 	{
-		cout << label[i].x << "  "<< label[i].y << endl;
+		shortestLabel[i].x = label[i].x;
+		shortestLabel[i].y = label[i].y;
 	}
 
-	unsigned int iterationsWithoutProgress = 0;
-	for (int i = 0; i < maxIteration && iterationsWithoutProgress < maxIterationWhithoutProgress; i++)
+	int iterations=0,iterationsWithoutProgress=0;
+	do
 	{
-		permute();
-		
+		evolve();
+		cDistance = 0;
+		for (int i = 0; i < n; i++) cDistance += path[i].count();
+		for (int i = 0; i < n; i++) cout << path[i].distance << endl;
+		cout << cDistance << endl << endl;
 		if (cDistance < shortestDistance)
 		{
 			shortestDistance = cDistance;
-			memcpy(shortestLabel, label, sizeof(label));
-			iterationsWithoutProgress = 0;
-			cout << endl << shortestDistance << endl;
+			for (int i = 0; i < n; i++)
+			{
+				shortestLabel[i].x = label[i].x;
+				shortestLabel[i].y = label[i].y;
+			}
 		}
-		else
-			iterationsWithoutProgress++;
-	}
-	memcpy(label, shortestLabel, sizeof(shortestLabel));
+		iterations++;
+		iterationsWithoutProgress++;
+	} while (iterations < maxIteration && iterationsWithoutProgress <maxIterationWhithoutProgress );
 
-	cout << endl << shortestDistance<< endl;
-	for (size_t i = 0; i < n; i++)
-	{
-		cout << label[i].x << "  " << label[i].y << endl;
-	}
-	double sum = 0;
-	for (size_t i = 0; i < n; i++)
-	{
-		sum += path[i].translation;
-	}
-	cout << sum <<endl;
+	cout << shortestDistance <<endl;
 }
